@@ -12,6 +12,7 @@ const emailPattern =
 const regexEmail = new RegExp(emailPattern);
 
 const tokenAndUserResponse = (req, res, user) => {
+  // JWT 토큰 생성
   const token = jwt.sign({ _id: user._id }, config.JWT_SECRET, {
     expiresIn: '1h',
   });
@@ -23,6 +24,7 @@ const tokenAndUserResponse = (req, res, user) => {
   user.password = undefined;
   user.resetCode = undefined;
 
+  // 로그인 응답
   return res.json({
     token,
     refreshToken,
@@ -107,15 +109,41 @@ export default class AuthController {
         return res.json({ error: '이미 사용 중인 이메일입니다.' });
       }
 
+      // 사용자 비밀번호 암호화
       const hashedPassword = await hashPassword(password);
 
-      // 사용자 정보 저장
+      // 사용자 데이터 저장
       const user = await new User({
         username: nanoid(6),
         email,
         password: hashedPassword,
       }).save();
 
+      tokenAndUserResponse(req, res, user);
+    } catch (err) {
+      console.log(err);
+      return res.json({
+        error: '뭔가 잘못 되었습니다. 서버 콘솔을 확인해주세요.',
+      });
+    }
+  };
+
+  login = async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      // 사용자 데이터 여부 확인
+      const user = await User.findOne({ email });
+
+      // 비밀번호 대조
+      const matchPassword = await comparePassword(password, user.password);
+      if (!matchPassword) {
+        return res.json({
+          error: '비밀번호가 일치하지 않습니다. 다시 입력해주세요',
+        });
+      }
+
+      // 로그인 처리
       tokenAndUserResponse(req, res, user);
     } catch (err) {
       console.log(err);
