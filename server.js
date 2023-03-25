@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import cors from 'cors';
 
 import authRouter from './routes/auth/index.js';
 
@@ -19,6 +20,7 @@ mongoose
 
 // 미들웨어
 app.use(express.json());
+app.use(cors());
 
 // 라우터 호출
 app.use('/api', authRouter);
