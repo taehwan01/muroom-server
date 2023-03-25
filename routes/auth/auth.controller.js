@@ -1,13 +1,34 @@
 import jwt from 'jsonwebtoken';
+import { nanoid } from 'nanoid';
 
 import * as config from '../../config.js';
 import User from '../../models/user.js';
 import { emailTemplate } from '../../helpers/email.js';
+import { hashPassword, comparePassword } from '../../models/auth.js';
 
 // 이메일 유효성 검사 정규식(RFC 5322 형식)
 const emailPattern =
   "([!#-'*+/-9=?A-Z^-~-]+(.[!#-'*+/-9=?A-Z^-~-]+)*|\"([]!#-[^-~ \t]|(\\[\t -~]))+\")@([!#-'*+/-9=?A-Z^-~-]+(.[!#-'*+/-9=?A-Z^-~-]+)*|[[\t -Z^-~]*])";
 const regexEmail = new RegExp(emailPattern);
+
+const tokenAndUserResponse = (req, res, user) => {
+  const token = jwt.sign({ _id: user._id }, config.JWT_SECRET, {
+    expiresIn: '1h',
+  });
+  const refreshToken = jwt.sign({ _id: user._id }, config.JWT_SECRET, {
+    expiresIn: '7d',
+  });
+
+  // 비밀번호 및 신규 비밀번호 생성 코드는 전달하지 않는다.
+  user.password = undefined;
+  user.resetCode = undefined;
+
+  return res.json({
+    token,
+    refreshToken,
+    user,
+  });
+};
 
 export default class AuthController {
   welcome = (req, res) => {
@@ -48,6 +69,8 @@ export default class AuthController {
       const token = jwt.sign({ email, password }, config.JWT_SECRET, {
         expiresIn: '1h',
       });
+
+      // 회원가입 인증 이메일 전송
       config.AWSSES.sendEmail(
         emailTemplate(
           email,
@@ -56,7 +79,7 @@ export default class AuthController {
             <a href="${config.CLIENT_URL}/auth/account-activate/${token}">회원가입 끝내기!</a>
           `,
           config.REPLY_TO,
-          '회원가입',
+          'Muroom 회원가입',
         ),
         (err, data) => {
           if (err) {
@@ -67,6 +90,33 @@ export default class AuthController {
           return res.json({ ok: true });
         },
       );
+    } catch (err) {
+      console.log(err);
+      return res.json({
+        error: '뭔가 잘못 되었습니다. 서버 콘솔을 확인해주세요.',
+      });
+    }
+  };
+
+  register = async (req, res) => {
+    try {
+      const { email, password } = jwt.verify(req.body.token, config.JWT_SECRET);
+
+      const userExists = await User.findOne({ email });
+      if (userExists) {
+        return res.json({ error: '이미 사용 중인 이메일입니다.' });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
+      // 사용자 정보 저장
+      const user = await new User({
+        username: nanoid(6),
+        email,
+        password: hashedPassword,
+      }).save();
+
+      tokenAndUserResponse(req, res, user);
     } catch (err) {
       console.log(err);
       return res.json({
