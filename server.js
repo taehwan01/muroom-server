@@ -17,6 +17,10 @@ mongoose
     console.log(err);
   });
 
+// 미들웨어
+app.use(express.json());
+
+// 라우터 호출
 app.use('/api', authRouter);
 
 app.listen(8000, () => {
