@@ -246,4 +246,18 @@ export default class AuthController {
       return res.send(403).json({ error: '인증이 필요합니다.' });
     }
   };
+
+  publicProfile = async (req, res) => {
+    try {
+      const user = await User.findOne({ username: req.params.username });
+
+      user.password = undefined;
+      user.resetCode = undefined;
+
+      res.json(user);
+    } catch (err) {
+      console.log(err);
+      return res.json({ error: '해당 사용자 정보가 확인되지 않습니다.' });
+    }
+  };
 }
