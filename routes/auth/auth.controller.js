@@ -231,4 +231,19 @@ export default class AuthController {
         .json({ error: 'Refresh Token이 유효하지 않습니다.' });
     }
   };
+
+  // 현재 로그인되어 있는 사용자 정보 가져오기
+  currentUser = async (req, res) => {
+    try {
+      const user = await User.findById(req.user._id);
+
+      user.password = undefined;
+      user.resetCode = undefined;
+
+      res.json(user);
+    } catch (err) {
+      console.log(err);
+      return res.send(403).json({ error: '인증이 필요합니다.' });
+    }
+  };
 }
