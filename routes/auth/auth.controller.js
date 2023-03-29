@@ -216,4 +216,19 @@ export default class AuthController {
       });
     }
   };
+
+  refreshToken = async (req, res) => {
+    try {
+      const { _id } = jwt.verify(req.headers.refresh_token, config.JWT_SECRET);
+
+      const user = await User.findById(_id);
+
+      tokenAndUserResponse(req, res, user);
+    } catch (err) {
+      console.log(err);
+      return res
+        .send(403)
+        .json({ error: 'Refresh Token이 유효하지 않습니다.' });
+    }
+  };
 }
