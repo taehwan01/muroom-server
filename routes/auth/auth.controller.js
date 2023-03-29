@@ -152,4 +152,50 @@ export default class AuthController {
       });
     }
   };
+
+  forgotPassword = async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.json({
+          error: '사용자 정보를 찾지 못했습니다. 이메일을 다시 확인해주세요.',
+        });
+      } else {
+        const resetCode = nanoid();
+        user.resetCode = resetCode;
+        user.save();
+
+        const token = jwt.sign({ resetCode }, config.JWT_SECRET, {
+          expiresIn: '1h',
+        });
+
+        config.AWSSES.sendEmail(
+          emailTemplate(
+            email,
+            `
+            <p>본인 확인을 위해 아래 링크로 접속해주세요.</p>
+            <a href="${config.CLIENT_URL}/auth/access-account/${token}">본인 확인 완료하기!</a>
+          `,
+            config.REPLY_TO,
+            'Muroom 비밀번호 찾기 본인 확인',
+          ),
+          (err, data) => {
+            if (err) {
+              console.log(err);
+              return res.json({ ok: false });
+            }
+            console.log(data);
+            return res.json({ ok: true });
+          },
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      return res.json({
+        error: '뭔가 잘못 되었습니다. 서버 콘솔을 확인해주세요.',
+      });
+    }
+  };
 }
