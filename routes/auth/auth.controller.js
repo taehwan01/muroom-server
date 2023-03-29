@@ -198,4 +198,22 @@ export default class AuthController {
       });
     }
   };
+
+  accessAccount = async (req, res) => {
+    try {
+      const { resetCode } = jwt.verify(req.body.resetCode, config.JWT_SECRET);
+
+      const user = await User.findOneAndUpdate(
+        { resetCode },
+        { resetCode: '' },
+      );
+
+      tokenAndUserResponse(req, res, user);
+    } catch (err) {
+      console.log(err);
+      return res.json({
+        error: '뭔가 잘못 되었습니다. 서버 콘솔을 확인해주세요.',
+      });
+    }
+  };
 }
