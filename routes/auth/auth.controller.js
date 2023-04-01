@@ -260,4 +260,26 @@ export default class AuthController {
       return res.json({ error: '해당 사용자 정보가 확인되지 않습니다.' });
     }
   };
+
+  updatePassword = async (req, res) => {
+    try {
+      const { password } = req.body;
+      if (!password) {
+        return res.json({ error: '비밀번호를 입력해주세요.' });
+      } else if (password?.length < 8) {
+        return res.json({ error: '비밀번호는 최소 8자 이상이어야 합니다.' });
+      }
+
+      const user = await User.findByIdAndUpdate(req.user._id, {
+        password: await hashPassword(password),
+      });
+
+      return res.json({ ok: true });
+    } catch (err) {
+      console.log(err);
+      return res.json(403).json({ error: 'Unauthorized' });
+    }
+  };
+  // TODO
+  // updatePassword, updateProfile
 }

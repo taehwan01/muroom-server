@@ -15,5 +15,6 @@ authRouter.post('/access-account', authController.accessAccount);
 authRouter.get('/refresh-token', authController.refreshToken);
 authRouter.get('/current-user', requireLogin, authController.currentUser);
 authRouter.get('/profile/:username', authController.publicProfile);
+authRouter.put('/update-password', requireLogin, authController.updatePassword);
 
 export default authRouter;
