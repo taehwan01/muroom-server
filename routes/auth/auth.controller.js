@@ -280,6 +280,22 @@ export default class AuthController {
       return res.json(403).json({ error: 'Unauthorized' });
     }
   };
+
+  updateProfile = async (req, res) => {
+    try {
+      const user = await User.findByIdAndUpdate(req.user._id, req.body, {
+        new: true,
+      });
+      user.password = undefined;
+      user.resetCode = undefined;
+      res.json(user);
+    } catch (err) {
+      if (err.codeName === 'DuplicateKey') {
+        return res.json({ error: '이미 사용 중인 이름입니다.' });
+      }
+      return res.send(403).json({ error: '로그인이 필요합니다.' });
+    }
+  };
   // TODO
   // updatePassword, updateProfile
 }
